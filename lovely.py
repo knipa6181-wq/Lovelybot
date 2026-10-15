@@ -29,7 +29,7 @@ def run_web_server():
 # --- Configuration ---
 BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
 
-# একাধিক ডিরেক্ট অ্যাড লিংক (এখানে আপনার Adsterra/Monetag-এর একাধিক লিংক বসাবেন)
+# একাধিক ডিরেক্ট অ্যাড লিংক রোটেশন
 AD_URLS = [
     "https://example.com/your-adsterra-direct-link-1",
     "https://example.com/your-adsterra-direct-link-2",
@@ -54,7 +54,8 @@ ad_last_click = {}        # {user_id: timestamp}
 channel_bonus_claimed = set()
 referred_users = set()
 
-async def delete_message_after_delay(message, delay_seconds: int = 10):
+# নির্দিষ্ট সময় পর মেসেজ মুছে ফেলার ফাংশন
+async def delete_message_after_delay(message, delay_seconds: int = 7):
     await asyncio.sleep(delay_seconds)
     try:
         await message.delete()
@@ -77,63 +78,64 @@ def get_main_menu(user_id, user_name):
         f"💄 <i>Spin, watch ads, climb the leaderboard & unlock VIP treats!</i>"
     )
     
+    # সম্পূর্ণ অ্যাডাল্ট ও সেন্সুয়াল ইমোজি দিয়ে সাজানো বাটন
     keyboard = [
         # --- Top 2 Big Hot Buttons ---
         [
-            InlineKeyboardButton("🔴 🔞 WATCH EXCLUSIVE 18+ 🔞 🔴", url="https://example.com/link_hot1")
+            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://example.com/link_hot1")
         ],
         [
-            InlineKeyboardButton("🟣 🍑 VIP PRIVATE ACCESS 🍑 🟣", url="https://example.com/link_hot2")
+            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://example.com/link_hot2")
         ],
         
         # --- 2-Column Buttons ---
         [
-            InlineKeyboardButton("🔴 Hot Videos 18+", url="https://example.com/link1"),
-            InlineKeyboardButton("🟢 Watch Full HD", url="https://example.com/link2")
+            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://example.com/link1"),
+            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://example.com/link2")
         ],
         [
-            InlineKeyboardButton("🔵 Adult Secrets 🔞", url="https://example.com/link3"),
-            InlineKeyboardButton("🟡 Spicy Content 👄", url="https://example.com/link4")
+            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://example.com/link3"),
+            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://example.com/link4")
         ],
         [
-            InlineKeyboardButton("🟣 Premium Clips", url="https://example.com/link5"),
-            InlineKeyboardButton("🟠 Private Leaks 💋", url="https://example.com/link6")
-        ],
-        
-        # --- VIP Unlock Button ---
-        [
-            InlineKeyboardButton("👑 🔓 Unlock VIP Content (50 Coins) 🔓 👑", callback_data="unlock_vip")
+            InlineKeyboardButton("💋 Premium Clips 🍑", url="https://example.com/link5"),
+            InlineKeyboardButton("🫦 Private Leaks 💦", url="https://example.com/link6")
         ],
         
-        # --- Spin & Leaderboard ---
+        # --- VIP Unlock Button (1000 Coins) ---
         [
-            InlineKeyboardButton("🎰 Spin & Win (3/day)", callback_data="spin_wheel"),
-            InlineKeyboardButton("🏆 Top 10 Earners", callback_data="leaderboard")
+            InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
+        ],
+        
+        # --- Animated Spin & Leaderboard ---
+        [
+            InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel"),
+            InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")
         ],
         
         # --- Daily Bonus & Refer ---
         [
-            InlineKeyboardButton("🎁 Daily Bonus (+25)", callback_data="daily_bonus"),
-            InlineKeyboardButton("👥 Refer & Earn (+20)", callback_data="refer_link")
+            InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
+            InlineKeyboardButton("👥 💋 Refer & Earn (+20) 🌶️", callback_data="refer_link")
         ],
         
         # --- Watch Ads ---
         [
-            InlineKeyboardButton("🪙 Watch Ad (+10)", callback_data="watch_ad"),
-            InlineKeyboardButton("🪙 Watch Ad (+10)", callback_data="watch_ad")
+            InlineKeyboardButton("🪙 🫦 Watch Ad (+10) 💋", callback_data="watch_ad"),
+            InlineKeyboardButton("🪙 👄 Watch Ad (+10) 🫦", callback_data="watch_ad")
         ],
         [
-            InlineKeyboardButton("🪙 Watch Ad (+10)", callback_data="watch_ad"),
-            InlineKeyboardButton("🪙 Watch Ad (+10)", callback_data="watch_ad")
+            InlineKeyboardButton("🪙 🌶️ Watch Ad (+10) 🍑", callback_data="watch_ad"),
+            InlineKeyboardButton("🪙 💋 Watch Ad (+10) 💦", callback_data="watch_ad")
         ],
         
         # --- Channels & Verified Bonus ---
         [
-            InlineKeyboardButton("📢 Channel 1", url=CHANNEL_1_URL),
-            InlineKeyboardButton("📢 Channel 2", url=CHANNEL_2_URL)
+            InlineKeyboardButton("📢 🫦 Channel 1 💋", url=CHANNEL_1_URL),
+            InlineKeyboardButton("📢 👄 Channel 2 🫦", url=CHANNEL_2_URL)
         ],
         [
-            InlineKeyboardButton("✅ Verify & Claim (+50 Coins) ✅", callback_data="claim_channel_bonus")
+            InlineKeyboardButton("✅ 💋 Verify & Claim (+50) 🫦 ✅", callback_data="claim_channel_bonus")
         ]
     ]
     
@@ -159,7 +161,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     try:
                         await context.bot.send_message(
                             chat_id=referrer_id,
-                            text=f"🎉 <b>Referral Success!</b> A new friend joined with your link. You got <b>+20 Coins</b>!",
+                            text=f"🎉 <b>Referral Success!</b> A new friend joined with your link. You got <b>+20 Coins</b>! 🫦",
                             parse_mode="HTML"
                         )
                     except Exception:
@@ -196,11 +198,11 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 1. Watch Ad with Rotation & 30s Cooldown
     if query.data == "watch_ad":
         last_ad_time = ad_last_click.get(user_id, 0)
-        cooldown = 30  # ৩০ সেকেন্ড বিরতি
+        cooldown = 30
         if now - last_ad_time < cooldown:
             remaining = int(cooldown - (now - last_ad_time))
             await query.answer(
-                text=f"⏳ Please wait {remaining} more seconds before watching another ad!",
+                text=f"⏳ Please wait {remaining} more seconds before watching another ad! 🫦",
                 show_alert=True
             )
             return
@@ -208,21 +210,20 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ad_last_click[user_id] = now
         user_coins[user_id] += 10
         
-        # একাধিক অ্যাড লিংক থেকে র‍্যান্ডমলি একটি নির্বাচন
         selected_ad = random.choice(AD_URLS)
         
         await query.answer(
-            text="🎉 +10 Coins Added! Opening ad...",
+            text="🎉 +10 Coins Added! Opening ad... 💋",
             show_alert=True
         )
         sent_ad_msg = await context.bot.send_message(
             chat_id=user_id,
-            text=f"👉 <b>Watch your video/ad here:</b>\n🔗 <a href='{selected_ad}'>Click Here To Watch</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
+            text=f"👉 <b>Watch your video/ad here:</b> 🫦\n🔗 <a href='{selected_ad}'>Click Here To Watch</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
             parse_mode="HTML"
         )
         asyncio.create_task(delete_message_after_delay(sent_ad_msg, 10))
 
-    # 2. Spin & Win with 3 Daily Limits
+    # 2. Real Animated Slot Machine (Spin & Win)
     elif query.data == "spin_wheel":
         user_spin = spin_records.get(user_id, {"date": today_str, "count": 0})
         if user_spin["date"] != today_str:
@@ -230,24 +231,48 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if user_spin["count"] >= 3:
             await query.answer(
-                text="❌ You reached your daily limit of 3 spins! Come back tomorrow.",
+                text="❌ You reached your daily limit of 3 spins! Come back tomorrow. 🫦",
                 show_alert=True
             )
             return
 
         user_spin["count"] += 1
         spin_records[user_id] = user_spin
-
-        rewards = [5, 10, 15, 20, 25, 50]
-        won = random.choice(rewards)
-        user_coins[user_id] += won
         remaining_spins = 3 - user_spin["count"]
-        await query.answer(
-            text=f"🎰 [ 🍒 | 💎 | 7️⃣ ]\n🎉 JACKPOT! You won +{won} Coins!\nRemaining spins today: {remaining_spins}",
-            show_alert=True
+
+        await query.answer(text="🎰 Spinning the Lucky Machine... 🫦")
+        
+        # টেলিগ্রামের নিজস্ব অ্যানিমেটেড স্লট মেশিন পাঠানো
+        dice_msg = await context.bot.send_dice(chat_id=user_id, emoji="🎰")
+        dice_value = dice_msg.dice.value
+
+        # স্লট মেশিন রেজাল্ট অ্যানিমেশনের জন্য অপেক্ষা
+        await asyncio.sleep(3.5)
+
+        # স্লট স্কোরের ওপর কয়েন পুরষ্কার
+        if dice_value == 64:  # ট্রিপল সেভেন (777 Jackpot)
+            reward = 100
+            result_txt = f"🔥 <b>777 JACKPOT!</b> 🔥\nYou won <b>+{reward} Coins</b>! 💋"
+        elif dice_value in [1, 22, 43]:  # বার বা বড় কম্বিনেশন
+            reward = 40
+            result_txt = f"🍒 <b>Big Win!</b> You won <b>+{reward} Coins</b>! 🫦"
+        else:
+            reward = random.choice([10, 15, 20])
+            result_txt = f"✨ You won <b>+{reward} Coins</b>! 💄"
+
+        user_coins[user_id] += reward
+
+        result_msg = await context.bot.send_message(
+            chat_id=user_id,
+            text=f"{result_txt}\n\nRemaining spins today: <b>{remaining_spins}</b> 🍒",
+            parse_mode="HTML"
         )
 
-    # 3. Leaderboard (Top 10 Earners)
+        # ৫ সেকেন্ড পর স্লট ও রেজাল্ট মেসেজ ডিলিট
+        asyncio.create_task(delete_message_after_delay(dice_msg, 5))
+        asyncio.create_task(delete_message_after_delay(result_msg, 5))
+
+    # 3. Leaderboard (৭ সেকেন্ড পর অটো রিমুভ)
     elif query.data == "leaderboard":
         sorted_users = sorted(user_coins.items(), key=lambda item: item[1], reverse=True)[:10]
         leaderboard_text = "🏆 <b>TOP 10 COIN EARNERS</b> 🏆\n\n"
@@ -259,27 +284,29 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             leaderboard_text += f"{medals[rank]} <b>{name}</b> — <code>{coins} Coins</code>\n"
             rank += 1
 
-        leaderboard_text += "\n💡 <i>Invite more friends and watch ads to get on top!</i>"
+        leaderboard_text += "\n💡 <i>Invite more friends and watch ads to get on top!</i> 🫦\n\n<i>(This message will disappear in 7 seconds)</i>"
         await query.answer()
-        await context.bot.send_message(
+        
+        leader_msg = await context.bot.send_message(
             chat_id=user_id,
             text=leaderboard_text,
             parse_mode="HTML"
         )
+        asyncio.create_task(delete_message_after_delay(leader_msg, 7))
 
     # 4. Daily Bonus
     elif query.data == "daily_bonus":
         last_claimed = daily_claims.get(user_id)
         if last_claimed == today_str:
             await query.answer(
-                text="⏳ You have already claimed today's bonus! Come back tomorrow.",
+                text="⏳ You have already claimed today's bonus! Come back tomorrow. 🫦",
                 show_alert=True
             )
         else:
             daily_claims[user_id] = today_str
             user_coins[user_id] += 25
             await query.answer(
-                text="🎉 Congratulations! You received +25 Daily Bonus Coins!",
+                text="🎉 Congratulations! You received +25 Daily Bonus Coins! 💋",
                 show_alert=True
             )
 
@@ -291,9 +318,9 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=user_id,
             text=(
-                f"🔗 <b>Your Exclusive Referral Link:</b>\n"
+                f"🔗 <b>Your Exclusive Referral Link:</b> 🫦\n"
                 f"<code>{refer_link}</code>\n\n"
-                f"💸 Share this link with friends! Get <b>+20 Coins</b> for every friend who starts the bot."
+                f"💸 Share this link with friends! Get <b>+20 Coins</b> for every friend who starts the bot. 💋"
             ),
             parse_mode="HTML"
         )
@@ -302,7 +329,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "claim_channel_bonus":
         if user_id in channel_bonus_claimed:
             await query.answer(
-                text="⚠️ You have already claimed your 50 Coins channel bonus!",
+                text="⚠️ You have already claimed your 50 Coins channel bonus! 🫦",
                 show_alert=True
             )
         else:
@@ -313,37 +340,37 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 channel_bonus_claimed.add(user_id)
                 user_coins[user_id] += 50
                 await query.answer(
-                    text="🎉 Verified! You joined all channels. +50 Coins added!",
+                    text="🎉 Verified! You joined all channels. +50 Coins added! 💋",
                     show_alert=True
                 )
             else:
                 await query.answer(
-                    text="❌ You haven't joined both channels yet! Please join Channel 1 & Channel 2 first.",
+                    text="❌ You haven't joined both channels yet! Please join Channel 1 & Channel 2 first. 🫦",
                     show_alert=True
                 )
 
-    # 7. Unlock VIP
+    # 7. Unlock VIP (১০০০ কয়েন প্রয়োজন)
     elif query.data == "unlock_vip":
-        if user_coins[user_id] >= 50:
-            user_coins[user_id] -= 50
+        if user_coins[user_id] >= 1000:
+            user_coins[user_id] -= 1000
             await query.answer(
-                text="🔓 VIP UNLOCKED! 50 Coins deducted.",
+                text="🔓 VIP UNLOCKED! 1000 Coins deducted. 💋",
                 show_alert=True
             )
             await context.bot.send_message(
                 chat_id=user_id,
                 text=(
-                    f"👑 <b>VIP ACCESS UNLOCKED!</b> 👑\n\n"
+                    f"👑 <b>VIP ACCESS UNLOCKED!</b> 🫦\n\n"
                     f"Here is your private VIP link:\n"
                     f"👉 <a href='{VIP_SECRET_LINK}'><b>Click Here For VIP Content</b></a>\n\n"
-                    f"<i>Enjoy premium access!</i>"
+                    f"<i>Enjoy premium access!</i> 💋"
                 ),
                 parse_mode="HTML"
             )
         else:
-            needed = 50 - user_coins[user_id]
+            needed = 1000 - user_coins[user_id]
             await query.answer(
-                text=f"❌ Not enough coins! You have {user_coins[user_id]} coins. Need {needed} more coins.",
+                text=f"❌ Not enough coins! You have {user_coins[user_id]} coins. Need {needed} more coins to unlock VIP (1000 Coins). 🫦",
                 show_alert=True
             )
 
