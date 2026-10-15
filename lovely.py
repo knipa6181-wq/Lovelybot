@@ -22,7 +22,7 @@ def run_web_server():
     server.serve_forever()
 
 # --- কনফিগারেশন ---
-BOT_TOKEN = "আপনার_টোকেন_এখানে_দিন"  # আপনার নতুন BotFather টোকেনটি এখানে বসাবেন
+BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"  # আপনার নতুন BotFather টোকেনটি এখানে বসাবেন
 
 # Adsterra / Monetag ডাইরেক্ট অ্যাড লিংক
 AD_URL = "https://example.com/your-adsterra-direct-link"
