@@ -1,12 +1,31 @@
+import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# টেলিগ্রাম BotFather থেকে পাওয়া টোকেন দিন
-BOT_TOKEN = "8838722017:AAHpcoMT8a5fdAbBDpjcNF7DLcv7z3A35m0"
+# Render-এর পোর্ট বাইন্ড করার জন্য ডামি ওয়েব সার্ভার
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+    # লগ যাতে বারবার কনসোলে না আসে
+    def log_message(self, format, *args):
+        return
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    server.serve_forever()
+
+# টেলিগ্রাম BotFather থেকে পাওয়া টোকেন
+BOT_TOKEN = "8838722017:AAHpcoMT8a5fdABDPjcNF7DLCv7z3A35m0"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # প্রতিটা বাটন এবং তার লিঙ্ক এখানে সেট করুন
     keyboard = [
         [InlineKeyboardButton("🔞 Hot videos 18+ 🔞", url="https://example.com/link1")],
         [InlineKeyboardButton("🎬 Watch now 🎬", url="https://example.com/link2")],
@@ -23,9 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # যদি বাটনের সাথে জিফ (GIF) বা ছবি পাঠাতে চান:
-    gif_url = "https://media.giphy.com/media/your-gif-link/giphy.gif"  # আপনার GIF-এর সরাসরি লিঙ্ক
+    gif_url = "https://media.giphy.com/media/your-gif-link/giphy.gif"
     
     await update.message.reply_animation(
         animation=gif_url,
@@ -34,6 +51,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 if __name__ == '__main__':
+    # Render-এর জন্য ব্যাকগ্রাউন্ডে ডামি সার্ভার চালু করা হচ্ছে
+    web_thread = threading.Thread(target=run_web_server, daemon=True)
+    web_thread.start()
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     
