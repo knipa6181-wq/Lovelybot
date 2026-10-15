@@ -32,13 +32,13 @@ AD_URL = "https://example.com/your-adsterra-direct-link"
 CHANNEL_1_URL = "https://t.me/your_channel_1"
 CHANNEL_2_URL = "https://t.me/your_channel_2"
 
-# আপনার রোমান্স জিফ লিংকটি এখানে বসান
-GIF_URL = "https://media.giphy.com/media/l41JRsph73VokN6ik/giphy.gif"
+# রোমান্টিক কিসিং অ্যানিমেশন GIF লিংক
+GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
 
 # Coin Storage Memory
 user_coins = {}
 
-# মেসেজ স্বয়ংক্রিয়ভাবে মুছে ফেলার জন্য সহায়ক ফাংশন
+# মেসেজ স্বয়ংক্রিয়ভাবে মুছে ফেলার ফাংশন (১০ সেকেন্ড পর)
 async def delete_message_after_delay(message, delay_seconds: int = 10):
     await asyncio.sleep(delay_seconds)
     try:
@@ -57,7 +57,7 @@ def get_main_menu(user_id, user_name):
     )
     
     keyboard = [
-        # --- GIF-এর নিচে ১টি করে ২টি বড় বাটন ---
+        # --- GIF-এর ঠিক নিচে ১টি করে ২টি বড় আকর্ষণীয় বাটন ---
         [
             InlineKeyboardButton("💋 🔞 WATCH EXCLUSIVE CONTENT 🔞 💋", url="https://example.com/link_hot1")
         ],
@@ -136,13 +136,12 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             show_alert=True
         )
         
-        # অ্যাড লিংক পাঠানো এবং ১০ সেকেন্ড পর স্বয়ংক্রিয়ভাবে ডিলিট হওয়া
+        # অ্যাড দেখার মেসেজ পাঠানো এবং ১০ সেকেন্ড পর স্বয়ংক্রিয়ভাবে ডিলিট হওয়া
         sent_ad_msg = await context.bot.send_message(
             chat_id=user_id,
             text=f"👉 <b>Watch your video/ad here:</b>\n🔗 <a href='{AD_URL}'>Click Here To Watch</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
             parse_mode="HTML"
         )
-        # ব্যাকগ্রাউন্ড টাস্কে ১০ সেকেন্ড পর মেসেজ ডিলিট করার নির্দেশ
         asyncio.create_task(delete_message_after_delay(sent_ad_msg, 10))
         
     elif query.data == "claim_channel_bonus":
