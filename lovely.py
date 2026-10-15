@@ -23,7 +23,7 @@ def run_web_server():
     server.serve_forever()
 
 # টেলিগ্রাম BotFather থেকে পাওয়া টোকেন
-BOT_TOKEN = "8838722017:AAHpcoMT8a5fdABDPjcNF7DLCv7z3A35m0"
+BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
