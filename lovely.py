@@ -31,8 +31,8 @@ AD_URL = "https://example.com/your-adsterra-direct-link"
 CHANNEL_1_URL = "https://t.me/your_channel_1"
 CHANNEL_2_URL = "https://t.me/your_channel_2"
 
-# Media Link
-GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
+# আকর্ষণীয় ফিগার GIF লিংক
+GIF_URL = "https://media.giphy.com/media/l41JRsph73VokN6ik/giphy.gif"
 
 # Coin Storage Memory
 user_coins = {}
@@ -41,15 +41,23 @@ user_coins = {}
 def get_main_menu(user_id, user_name):
     coins = user_coins.get(user_id, 0)
     
-    # Compact, neat and modern caption taking minimal vertical space
+    # Compact & stylish English caption
     caption = (
         f"💋 <b>Welcome, {user_name}!</b> 🫦\n"
-        f"👄 <b>Profile:</b> {user_name} | 💰 <b>Balance:</b> <code>{coins} Coins</code>\n"
-        f"💄 <i>Tap the buttons below to enjoy exclusive clips & earn coins!</i>"
+        f"👄 <b>User:</b> {user_name} | 💰 <b>Balance:</b> <code>{coins} Coins</code>\n"
+        f"💄 <i>Tap the hot buttons below to unlock premium treats!</i>"
     )
     
-    # Centered & 2-column balanced grid with lips and kiss styling
     keyboard = [
+        # --- GIF-এর ঠিক নিচে ১টি করে ২টি বড় স্পেশাল বাটন ---
+        [
+            InlineKeyboardButton("💋 🔞 WATCH VIRAL 18+ UNCENSORED 🔞 💋", url="https://example.com/link_hot1")
+        ],
+        [
+            InlineKeyboardButton("🫦 🍑 EXCLUSIVE VIP PRIVATE SHOW 🍑 🫦", url="https://example.com/link_hot2")
+        ],
+        
+        # --- নিচে ২-কলামের সাজানো বাটনসমূহ ---
         [
             InlineKeyboardButton("💋 Hot Videos 18+ 🫦", url="https://example.com/link1"),
             InlineKeyboardButton("👄 Watch Full HD 💋", url="https://example.com/link2")
@@ -116,7 +124,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "watch_ad":
         user_coins[user_id] += 10
         await query.answer(
-            text="🎉 +10 Coins Added! Redirecting to sponsored ad...",
+            text="🎉 +10 Coins Added! Opening link...",
             show_alert=True
         )
         await context.bot.send_message(
@@ -128,7 +136,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "claim_channel_bonus":
         user_coins[user_id] += 50
         await query.answer(
-            text="🎉 Congratulations! +50 Coins claimed successfully!",
+            text="🎉 Congratulations! +50 Coins bonus claimed!",
             show_alert=True
         )
 
