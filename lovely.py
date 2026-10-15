@@ -1,5 +1,6 @@
 import os
 import threading
+import asyncio
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -31,30 +32,37 @@ AD_URL = "https://example.com/your-adsterra-direct-link"
 CHANNEL_1_URL = "https://t.me/your_channel_1"
 CHANNEL_2_URL = "https://t.me/your_channel_2"
 
-# আকর্ষণীয় ফিগার GIF লিংক
+# আপনার রোমান্স জিফ লিংকটি এখানে বসান
 GIF_URL = "https://media.giphy.com/media/l41JRsph73VokN6ik/giphy.gif"
 
 # Coin Storage Memory
 user_coins = {}
 
+# মেসেজ স্বয়ংক্রিয়ভাবে মুছে ফেলার জন্য সহায়ক ফাংশন
+async def delete_message_after_delay(message, delay_seconds: int = 10):
+    await asyncio.sleep(delay_seconds)
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
 # Main Menu Generator
 def get_main_menu(user_id, user_name):
     coins = user_coins.get(user_id, 0)
     
-    # Compact & stylish English caption
     caption = (
         f"💋 <b>Welcome, {user_name}!</b> 🫦\n"
         f"👄 <b>User:</b> {user_name} | 💰 <b>Balance:</b> <code>{coins} Coins</code>\n"
-        f"💄 <i>Tap the hot buttons below to unlock premium treats!</i>"
+        f"💄 <i>Tap the buttons below to unlock premium access!</i>"
     )
     
     keyboard = [
-        # --- GIF-এর ঠিক নিচে ১টি করে ২টি বড় স্পেশাল বাটন ---
+        # --- GIF-এর নিচে ১টি করে ২টি বড় বাটন ---
         [
-            InlineKeyboardButton("💋 🔞 WATCH VIRAL 18+ UNCENSORED 🔞 💋", url="https://example.com/link_hot1")
+            InlineKeyboardButton("💋 🔞 WATCH EXCLUSIVE CONTENT 🔞 💋", url="https://example.com/link_hot1")
         ],
         [
-            InlineKeyboardButton("🫦 🍑 EXCLUSIVE VIP PRIVATE SHOW 🍑 🫦", url="https://example.com/link_hot2")
+            InlineKeyboardButton("🫦 🍑 VIP PRIVATE ACCESS 🍑 🫦", url="https://example.com/link_hot2")
         ],
         
         # --- নিচে ২-কলামের সাজানো বাটনসমূহ ---
@@ -72,7 +80,7 @@ def get_main_menu(user_id, user_name):
         ],
         [
             InlineKeyboardButton("🫦 Exclusive VIP Pass 💎", url="https://example.com/link7"),
-            InlineKeyboardButton("💄 Top 18+ Trending 🔥", url="https://example.com/link8")
+            InlineKeyboardButton("💄 Top Trending 🔥", url="https://example.com/link8")
         ],
         [
             InlineKeyboardButton("💋 Watch Ad (+10) 💰", callback_data="watch_ad"),
@@ -124,14 +132,18 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "watch_ad":
         user_coins[user_id] += 10
         await query.answer(
-            text="🎉 +10 Coins Added! Opening link...",
+            text="🎉 +10 Coins Added! Opening ad link...",
             show_alert=True
         )
-        await context.bot.send_message(
+        
+        # অ্যাড লিংক পাঠানো এবং ১০ সেকেন্ড পর স্বয়ংক্রিয়ভাবে ডিলিট হওয়া
+        sent_ad_msg = await context.bot.send_message(
             chat_id=user_id,
-            text=f"👉 <b>Watch your video/ad here:</b>\n🔗 <a href='{AD_URL}'>Click Here To Watch</a>",
+            text=f"👉 <b>Watch your video/ad here:</b>\n🔗 <a href='{AD_URL}'>Click Here To Watch</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
             parse_mode="HTML"
         )
+        # ব্যাকগ্রাউন্ড টাস্কে ১০ সেকেন্ড পর মেসেজ ডিলিট করার নির্দেশ
+        asyncio.create_task(delete_message_after_delay(sent_ad_msg, 10))
         
     elif query.data == "claim_channel_bonus":
         user_coins[user_id] += 50
@@ -140,7 +152,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             show_alert=True
         )
 
-    # Update caption & coins dynamically
+    # ড্যাশবোর্ডের ব্যালেন্স আপডেট
     caption, reply_markup = get_main_menu(user_id, user_name)
     try:
         await query.edit_message_caption(
