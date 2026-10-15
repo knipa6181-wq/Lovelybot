@@ -54,8 +54,8 @@ ad_last_click = {}        # {user_id: timestamp}
 channel_bonus_claimed = set()
 referred_users = set()
 
-# নির্দিষ্ট সময় পর মেসেজ মুছে ফেলার ফাংশন
-async def delete_message_after_delay(message, delay_seconds: int = 7):
+# মেসেজ স্বয়ংক্রিয়ভাবে ডিলিট করার হেল্পার ফাংশন
+async def delete_message_after_delay(message, delay_seconds: int = 5):
     await asyncio.sleep(delay_seconds)
     try:
         await message.delete()
@@ -78,7 +78,6 @@ def get_main_menu(user_id, user_name):
         f"💄 <i>Spin, watch ads, climb the leaderboard & unlock VIP treats!</i>"
     )
     
-    # সম্পূর্ণ অ্যাডাল্ট ও সেন্সুয়াল ইমোজি দিয়ে সাজানো বাটন
     keyboard = [
         # --- Top 2 Big Hot Buttons ---
         [
@@ -223,7 +222,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         asyncio.create_task(delete_message_after_delay(sent_ad_msg, 10))
 
-    # 2. Real Animated Slot Machine (Spin & Win)
+    # 2. Animated Slot Machine (অটো-ক্লিন ফিচারসহ)
     elif query.data == "spin_wheel":
         user_spin = spin_records.get(user_id, {"date": today_str, "count": 0})
         if user_spin["date"] != today_str:
@@ -242,18 +241,18 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await query.answer(text="🎰 Spinning the Lucky Machine... 🫦")
         
-        # টেলিগ্রামের নিজস্ব অ্যানিমেটেড স্লট মেশিন পাঠানো
+        # অ্যানিমেটেড স্লট মেশিন পাঠানো
         dice_msg = await context.bot.send_dice(chat_id=user_id, emoji="🎰")
         dice_value = dice_msg.dice.value
 
-        # স্লট মেশিন রেজাল্ট অ্যানিমেশনের জন্য অপেক্ষা
+        # অ্যানিমেশন শেষ হতে ৩.৫ সেকেন্ড অপেক্ষা
         await asyncio.sleep(3.5)
 
-        # স্লট স্কোরের ওপর কয়েন পুরষ্কার
-        if dice_value == 64:  # ট্রিপল সেভেন (777 Jackpot)
+        # রেজাল্ট নির্ধারণ
+        if dice_value == 64:  # ট্রিপল সেভেন জ্যাকপট
             reward = 100
             result_txt = f"🔥 <b>777 JACKPOT!</b> 🔥\nYou won <b>+{reward} Coins</b>! 💋"
-        elif dice_value in [1, 22, 43]:  # বার বা বড় কম্বিনেশন
+        elif dice_value in [1, 22, 43]:
             reward = 40
             result_txt = f"🍒 <b>Big Win!</b> You won <b>+{reward} Coins</b>! 🫦"
         else:
@@ -262,17 +261,18 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         user_coins[user_id] += reward
 
+        # উইনিং রেজাল্ট দেখানো
         result_msg = await context.bot.send_message(
             chat_id=user_id,
-            text=f"{result_txt}\n\nRemaining spins today: <b>{remaining_spins}</b> 🍒",
+            text=f"{result_txt}\n\nRemaining spins: <b>{remaining_spins}</b> 🍒\n<i>(Cleaning chat in 3 seconds...)</i>",
             parse_mode="HTML"
         )
 
-        # ৫ সেকেন্ড পর স্লট ও রেজাল্ট মেসেজ ডিলিট
-        asyncio.create_task(delete_message_after_delay(dice_msg, 5))
-        asyncio.create_task(delete_message_after_delay(result_msg, 5))
+        # ৩ সেকেন্ড পর স্লট মেশিন এবং রেজাল্ট নোটিশ সম্পূর্ণ ডিলিট করে স্ক্রিন ক্লিন রাখা
+        asyncio.create_task(delete_message_after_delay(dice_msg, 3))
+        asyncio.create_task(delete_message_after_delay(result_msg, 3))
 
-    # 3. Leaderboard (৭ সেকেন্ড পর অটো রিমুভ)
+    # 3. Leaderboard (৭ সেকেন্ড পর অটো ডিলিট)
     elif query.data == "leaderboard":
         sorted_users = sorted(user_coins.items(), key=lambda item: item[1], reverse=True)[:10]
         leaderboard_text = "🏆 <b>TOP 10 COIN EARNERS</b> 🏆\n\n"
@@ -349,7 +349,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     show_alert=True
                 )
 
-    # 7. Unlock VIP (১০০০ কয়েন প্রয়োজন)
+    # 7. VIP Unlock (১০০০ কয়েন প্রয়োজন)
     elif query.data == "unlock_vip":
         if user_coins[user_id] >= 1000:
             user_coins[user_id] -= 1000
@@ -374,7 +374,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 show_alert=True
             )
 
-    # ড্যাশবোর্ড রিফ্রেশ
+    # ড্যাশবোর্ড আপডেট (নতুন কয়েন রিফ্লেক্ট হবে)
     caption, reply_markup = get_main_menu(user_id, user_name)
     try:
         await query.edit_message_caption(
