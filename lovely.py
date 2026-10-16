@@ -3,15 +3,12 @@ import threading
 import asyncio
 import random
 import time
-import urllib.parse
 from datetime import datetime, date
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, InlineQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
-# Render Web Server to keep service active
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -27,7 +24,6 @@ def run_web_server():
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-# --- Configuration ---
 BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
 
 AD_URLS = [
@@ -45,7 +41,6 @@ CHANNEL_2_URL = "https://t.me/your_channel_2"
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
 
-# Data Storage
 user_coins = {}
 user_names = {}
 daily_claims = {}
@@ -54,8 +49,7 @@ ad_last_click = {}
 channel_bonus_claimed = set()
 referred_users = set()
 
-# নিরাপদ ও নির্ভরযোগ্য মেসেজ ডিলিট ফাংশন
-async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 4):
+async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
     await asyncio.sleep(delay_seconds)
     try:
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -69,7 +63,7 @@ async def is_user_member(bot, chat_id, user_id):
     except TelegramError:
         return False
 
-def get_main_menu(user_id, user_name, bot_username=""):
+def get_main_menu(user_id, user_name):
     coins = user_coins.get(user_id, 0)
     
     caption = (
@@ -78,21 +72,13 @@ def get_main_menu(user_id, user_name, bot_username=""):
         f"💄 <i>Spin, watch ads, climb the leaderboard & unlock VIP treats!</i>"
     )
     
-    # অ্যাডভান্স সরাসরি ফ্রেন্ড লিস্টে যাওয়ার টেলিগ্রাম শেয়ার লিংক
-    refer_link = f"https://t.me/{bot_username}?start=ref_{user_id}" if bot_username else "#"
-    share_text = urllib.parse.quote("💋 Join this exclusive 18+ VIP bot & get free rewards! 🔥")
-    share_url = f"https://t.me/share/url?url={urllib.parse.quote(refer_link)}&text={share_text}"
-
     keyboard = [
-        # --- Top 2 Big Hot Buttons ---
         [
             InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://example.com/link_hot1")
         ],
         [
             InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://example.com/link_hot2")
         ],
-        
-        # --- 2-Column Buttons ---
         [
             InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://example.com/link1"),
             InlineKeyboardButton("👄 Watch Full HD 💋", url="https://example.com/link2")
@@ -105,25 +91,18 @@ def get_main_menu(user_id, user_name, bot_username=""):
             InlineKeyboardButton("💋 Premium Clips 🍑", url="https://example.com/link5"),
             InlineKeyboardButton("🫦 Private Leaks 💦", url="https://example.com/link6")
         ],
-        
-        # --- VIP Unlock Button ---
         [
             InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
         ],
-        
-        # --- Spin & Leaderboard ---
         [
             InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel"),
             InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")
         ],
-        
-        # --- Daily Bonus & অ্যাডভান্স ফ্রেন্ড শেয়ার বাটন ---
         [
             InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
-            InlineKeyboardButton("👥 💋 Invite Friends (+20) 🌶️", url=share_url)
+            # switch_inline_query ব্যবহার করায় একসাথে আনলিমিটেড ফ্রেন্ড সিলেক্ট করার মেনু আসবে
+            InlineKeyboardButton("👥 💋 Multi-Invite (+20) 🌶️", switch_inline_query="invite")
         ],
-        
-        # --- Watch Ads ---
         [
             InlineKeyboardButton("🪙 🫦 Watch Ad (+10) 💋", callback_data="watch_ad"),
             InlineKeyboardButton("🪙 👄 Watch Ad (+10) 🫦", callback_data="watch_ad")
@@ -132,8 +111,6 @@ def get_main_menu(user_id, user_name, bot_username=""):
             InlineKeyboardButton("🪙 🌶️ Watch Ad (+10) 🍑", callback_data="watch_ad"),
             InlineKeyboardButton("🪙 💋 Watch Ad (+10) 💦", callback_data="watch_ad")
         ],
-        
-        # --- Channels & Verified Bonus ---
         [
             InlineKeyboardButton("📢 🫦 Channel 1 💋", url=CHANNEL_1_URL),
             InlineKeyboardButton("📢 👄 Channel 2 🫦", url=CHANNEL_2_URL)
@@ -145,16 +122,13 @@ def get_main_menu(user_id, user_name, bot_username=""):
     
     return caption, InlineKeyboardMarkup(keyboard)
 
-# /start Command Handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
     user_name = user.first_name
 
     user_names[user_id] = user_name
-    bot_username = (await context.bot.get_me()).username
 
-    # Handle Referral System
     if context.args and len(context.args) > 0:
         referrer_str = context.args[0]
         if referrer_str.startswith("ref_"):
@@ -177,7 +151,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id not in user_coins:
         user_coins[user_id] = 0
 
-    caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
+    caption, reply_markup = get_main_menu(user_id, user_name)
 
     await update.message.reply_animation(
         animation=GIF_URL,
@@ -186,7 +160,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# Callback Query Handler
+# মাল্টি-ফ্রেন্ড সিলেক্ট হ্যান্ডলার
+async def inline_share_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.inline_query.from_user
+    bot_username = (await context.bot.get_me()).username
+    refer_link = f"https://t.me/{bot_username}?start=ref_{user.id}"
+
+    share_content = (
+        f"💋 <b>Join this VIP Bot to watch uncensored 18+ content & earn free coins!</b> 🔞\n\n"
+        f"👉 <b>Click here to start:</b>\n{refer_link}"
+    )
+
+    results = [
+        InlineQueryResultArticle(
+            id="share_ref",
+            title="💋 Send Invite to Friends / Groups 🫦",
+            description="Tap to send your referral invitation link",
+            input_message_content=InputTextMessageContent(
+                message_text=share_content,
+                parse_mode="HTML"
+            )
+        )
+    ]
+    await update.inline_query.answer(results=results, cache_time=1)
+
 async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = query.from_user
@@ -199,9 +196,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     today_str = str(date.today())
     now = time.time()
-    bot_username = (await context.bot.get_me()).username
 
-    # 1. Watch Ad
     if query.data == "watch_ad":
         last_ad_time = ad_last_click.get(user_id, 0)
         cooldown = 30
@@ -228,7 +223,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         asyncio.create_task(safe_delete_message(context.bot, user_id, sent_ad_msg.message_id, 10))
 
-    # 2. Animated Slot Machine (ডাইস মুছে ফেলার নিখুঁত সমাধান)
+    # স্লট মেশিন: কোনো আলাদা মেসেজ ছাড়াই মূল কার্ডে লাইভ অ্যানিমেশন ও অটো-রিসেট
     elif query.data == "spin_wheel":
         user_spin = spin_records.get(user_id, {"date": today_str, "count": 0})
         if user_spin["date"] != today_str:
@@ -245,30 +240,50 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         spin_records[user_id] = user_spin
         remaining_spins = 3 - user_spin["count"]
 
-        await query.answer(text="🎰 Spinning the Lucky Machine... 🫦")
-        
-        # ডাইস পাঠানো
-        dice_msg = await context.bot.send_dice(chat_id=user_id, emoji="🎰")
-        dice_value = dice_msg.dice.value
+        await query.answer(text="🎰 Spinning the Slot Machine... 🫦")
 
-        # টেলিগ্রাম অ্যানিমেশন সম্পূর্ণ শেষ হতে ঠিক ৫ সেকেন্ড অপেক্ষা (যাতে ডিলিট এরর না আসে)
-        await asyncio.sleep(5)
+        # স্ক্রিনে লাইভ স্লট রোটেট অ্যানিমেশন
+        animation_frames = [
+            "🎰 [ 🍒 | 🍇 | 🍋 ] <i>Rolling...</i> 🫦",
+            "🎰 [ 💎 | 🍒 | 🔔 ] <i>Spinning...</i> 🔥",
+            "🎰 [ 7️⃣ | 💎 | 🍒 ] <i>Almost stopped...</i> 💋"
+        ]
 
-        # পয়েন্ট ক্যালকুলেশন
-        if dice_value == 64:
-            reward = 100
-            result_txt = f"🔥 <b>777 JACKPOT!</b> 🔥\nYou won <b>+{reward} Coins</b>! 💋"
-        elif dice_value in [1, 22, 43]:
-            reward = 40
-            result_txt = f"🍒 <b>Big Win!</b> You won <b>+{reward} Coins</b>! 🫦"
-        else:
-            reward = random.choice([10, 15, 20])
-            result_txt = f"✨ You won <b>+{reward} Coins</b>! 💄"
+        for frame in animation_frames:
+            try:
+                await query.edit_message_caption(
+                    caption=f"{frame}\n\n⏳ <b>User:</b> {user_name} | 💰 <b>Balance:</b> {user_coins[user_id]} Coins",
+                    parse_mode="HTML"
+                )
+                await asyncio.sleep(0.7)
+            except Exception:
+                pass
 
-        user_coins[user_id] += reward
+        # ফলাফল নির্ধারণ
+        prizes = [10, 15, 20, 25, 50, 100]
+        won = random.choice(prizes)
+        user_coins[user_id] += won
 
-        # ড্যাশবোর্ডে কয়েন সরাসরি আপডেট
-        caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
+        jackpot_tag = "🔥 <b>777 JACKPOT!</b> 🔥" if won >= 50 else "🎉 <b>YOU WON!</b> 🍒"
+
+        result_caption = (
+            f"{jackpot_tag}\n\n"
+            f"🎁 <b>Prize:</b> +{won} Coins! 💋\n"
+            f"🔄 <b>Remaining spins today:</b> {remaining_spins}\n\n"
+            f"<i>(Refreshing menu in 3 seconds...)</i>"
+        )
+
+        try:
+            await query.edit_message_caption(
+                caption=result_caption,
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+
+        # ৩ সেকেন্ড পর স্বয়ংক্রিয়ভাবে মূল মেনুতে ফিরে এসে স্ক্রিন পরিষ্কার রাখা
+        await asyncio.sleep(3)
+        caption, reply_markup = get_main_menu(user_id, user_name)
         try:
             await query.edit_message_caption(
                 caption=caption,
@@ -278,18 +293,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        # ফলাফল মেসেজ পাঠানো
-        result_msg = await context.bot.send_message(
-            chat_id=user_id,
-            text=f"{result_txt}\n\nRemaining spins: <b>{remaining_spins}</b> 🍒",
-            parse_mode="HTML"
-        )
-
-        # অ্যানিমেশন পুরোপুরি থেমে যাওয়ার পর ডাইস ও নোটিশ দুটোই ডিলিট করা
-        asyncio.create_task(safe_delete_message(context.bot, user_id, dice_msg.message_id, 2))
-        asyncio.create_task(safe_delete_message(context.bot, user_id, result_msg.message_id, 4))
-
-    # 3. Leaderboard
     elif query.data == "leaderboard":
         sorted_users = sorted(user_coins.items(), key=lambda item: item[1], reverse=True)[:10]
         leaderboard_text = "🏆 <b>TOP 10 COIN EARNERS</b> 🏆\n\n"
@@ -311,7 +314,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         asyncio.create_task(safe_delete_message(context.bot, user_id, leader_msg.message_id, 7))
 
-    # 4. Daily Bonus
     elif query.data == "daily_bonus":
         last_claimed = daily_claims.get(user_id)
         if last_claimed == today_str:
@@ -326,7 +328,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text="🎉 Congratulations! You received +25 Daily Bonus Coins! 💋",
                 show_alert=True
             )
-            caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
+            caption, reply_markup = get_main_menu(user_id, user_name)
             try:
                 await query.edit_message_caption(
                     caption=caption,
@@ -336,7 +338,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 pass
 
-    # 5. Force Subscription Check
     elif query.data == "claim_channel_bonus":
         if user_id in channel_bonus_claimed:
             await query.answer(
@@ -354,7 +355,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     text="🎉 Verified! You joined all channels. +50 Coins added! 💋",
                     show_alert=True
                 )
-                caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
+                caption, reply_markup = get_main_menu(user_id, user_name)
                 try:
                     await query.edit_message_caption(
                         caption=caption,
@@ -369,7 +370,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     show_alert=True
                 )
 
-    # 6. VIP Unlock
     elif query.data == "unlock_vip":
         if user_coins[user_id] >= 1000:
             user_coins[user_id] -= 1000
@@ -387,7 +387,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ),
                 parse_mode="HTML"
             )
-            caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
+            caption, reply_markup = get_main_menu(user_id, user_name)
             try:
                 await query.edit_message_caption(
                     caption=caption,
@@ -407,9 +407,11 @@ if __name__ == '__main__':
     web_thread = threading.Thread(target=run_web_server, daemon=True)
     web_thread.start()
 
+    # ইনলাইন মোড সক্রিয় করার হ্যান্ডলারসহ অ্যাপ্লিকেশন বিল্ড
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
+    app.add_handler(InlineQueryHandler(inline_share_handler))
 
     print("Bot is running...")
     app.run_polling()
