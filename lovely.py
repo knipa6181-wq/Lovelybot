@@ -10,22 +10,34 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
+# --- ওয়েব সার্ভার (UptimeRobot ও Render স্লিপ ঠেকাতে) ---
 class HealthCheckHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
+    def do_HEAD(self):
+        # UptimeRobot সাধারণত HEAD মেথডে পিং পাঠায়
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write(b"Bot is alive!")
+
+    def do_GET(self):
+        # ব্রাউজার বা সাধারণ রিকোয়েস্টের জন্য GET মেথড
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"Bot is alive and running!")
 
     def log_message(self, format, *args):
+        # কনসোলে অতিরিক্ত পিং লগ বন্ধ রাখতে
         return
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
+    HTTPServer.allow_reuse_address = True
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
+# --- বট কনফিগারেশন ---
+# পরিবেশ ভেরিয়েবল থাকলে সেখান থেকে নেবে, না থাকলে ডিফল্ট টোকেন নেবে
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU")
 
 AD_URLS = [
     "https://example.com/your-adsterra-direct-link-1",
@@ -73,7 +85,6 @@ def get_main_menu(user_id, user_name, bot_username=""):
         f"💄 <i>Spin, watch ads, climb the leaderboard & unlock VIP treats!</i>"
     )
     
-    # সম্পূর্ণ অ্যাডাল্ট ও আকর্ষণীয় শেয়ার টেক্সট
     refer_link = f"https://t.me/{bot_username}?start=ref_{user_id}" if bot_username else "https://t.me/"
     raw_share_text = (
         "🔞 <b>WATCH EXCLUSIVE 18+ UNCENSORED VIDEOS!</b> 🫦💦\n\n"
@@ -81,7 +92,6 @@ def get_main_menu(user_id, user_name, bot_username=""):
         "👉 <b>Tap here to enter VIP room:</b>"
     )
     
-    # টেলিগ্রামের অফিশিয়াল শেয়ার URL (যা ফ্রেন্ড লিস্ট খুলে মাল্টি-সিলেক্ট সাপোর্ট করে)
     encoded_url = urllib.parse.quote(refer_link)
     encoded_text = urllib.parse.quote(raw_share_text)
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
@@ -114,7 +124,6 @@ def get_main_menu(user_id, user_name, bot_username=""):
         ],
         [
             InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
-            # অফিসিয়াল টেলিগ্রাম মাল্টি-শেয়ার বাটন
             InlineKeyboardButton("👥 💋 Share to Friends (+20) 🌶️", url=official_share_url)
         ],
         [
@@ -155,7 +164,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     try:
                         await context.bot.send_message(
                             chat_id=referrer_id,
-                            text=f"🎉 <b>Referral Success!</b> A new friend joined with your link. You got <b>+20 Coins</b>! 🫦",
+                            text="🎉 <b>Referral Success!</b> A new friend joined with your link. You got <b>+20 Coins</b>! 🫦",
                             parse_mode="HTML"
                         )
                     except Exception:
@@ -215,7 +224,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         asyncio.create_task(safe_delete_message(context.bot, user_id, sent_ad_msg.message_id, 10))
 
-    # স্লট মেশিন: মূল কার্ডে লাইভ অ্যানিমেশন (কোনো ডাইস ঝামেলা নেই)
     elif query.data == "spin_wheel":
         user_spin = spin_records.get(user_id, {"date": today_str, "count": 0})
         if user_spin["date"] != today_str:
@@ -393,9 +401,11 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
 if __name__ == '__main__':
+    # ব্যাকগ্রাউন্ড থ্রেডে ওয়েব সার্ভার চালু করা
     web_thread = threading.Thread(target=run_web_server, daemon=True)
     web_thread.start()
 
+    # টেলিগ্রাম বট অ্যাপ্লিকেশন শুরু
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
