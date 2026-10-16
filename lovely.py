@@ -10,21 +10,42 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
+# --- Render Web Server (501 Not Implemented Fix) ---
 class HealthCheckHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
+    def _send_ok(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-Length', '13')
         self.end_headers()
         self.wfile.write(b"Bot is alive!")
 
+    def do_GET(self):
+        self._send_ok()
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-Length', '13')
+        self.end_headers()
+
+    def do_POST(self):
+        self._send_ok()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Allow', 'GET, HEAD, POST, OPTIONS')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def log_message(self, format, *args):
-        return
+        return  # অতিরিক্ত লগ বন্ধ রাখা
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
+# --- Configuration ---
 BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
 
 AD_URLS = [
@@ -42,6 +63,7 @@ CHANNEL_2_URL = "https://t.me/your_channel_2"
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
 
+# Data Storage
 user_coins = {}
 user_names = {}
 daily_claims = {}
@@ -50,9 +72,9 @@ ad_last_click = {}
 channel_bonus_claimed = set()
 referred_users = set()
 
-# ইউজার রিটেনশন ও পুশ নোটিফিকেশন ট্র্যাকিং
-user_last_active = {}      # {user_id: timestamp}
-user_last_reminded = {}    # {user_id: timestamp}
+# Retention tracking
+user_last_active = {}
+user_last_reminded = {}
 
 async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
     await asyncio.sleep(delay_seconds)
@@ -137,15 +159,13 @@ def get_main_menu(user_id, user_name, bot_username=""):
     
     return caption, InlineKeyboardMarkup(keyboard)
 
-# --- ২৪ ঘণ্টার অটোমেটিক রিটেনশন পুশ নোটিফিকেশন লুপ ---
 async def daily_retention_alarm_loop(app):
-    await asyncio.sleep(10)  # সার্ভার স্টার্টআপের জন্য সাময়িক অপেক্ষা
+    await asyncio.sleep(10)
     while True:
         now = time.time()
-        one_day = 86400  # ২৪ ঘণ্টা = ৮৬,৪০০ সেকেন্ড
+        one_day = 86400
 
         for uid, last_active in list(user_last_active.items()):
-            # ২৪ ঘণ্টা পার হয়েছে এবং গত ২৪ ঘণ্টায় রিমাইন্ডার পাঠানো হয়নি
             last_sent = user_last_reminded.get(uid, 0)
             if (now - last_active >= one_day) and (now - last_sent >= one_day):
                 try:
@@ -172,9 +192,9 @@ async def daily_retention_alarm_loop(app):
                     user_last_reminded[uid] = now
                 except Exception:
                     pass
-                await asyncio.sleep(0.5)  # রেট লিমিট সুরক্ষিত রাখা
+                await asyncio.sleep(0.5)
 
-        await asyncio.sleep(1800)  # প্রতি ৩০ মিনিট পর পর স্ক্যান করবে
+        await asyncio.sleep(1800)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -434,7 +454,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
 async def post_init(application):
-    # বট সক্রিয় হওয়ার পর স্বয়ংক্রিয় ব্যাকগ্রাউন্ড অ্যালার্ম লুপ চালু করা
     asyncio.create_task(daily_retention_alarm_loop(application))
 
 if __name__ == '__main__':
