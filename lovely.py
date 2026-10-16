@@ -10,34 +10,22 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
-# --- ওয়েব সার্ভার (UptimeRobot ও Render স্লিপ ঠেকাতে) ---
 class HealthCheckHandler(BaseHTTPRequestHandler):
-    def do_HEAD(self):
-        # UptimeRobot সাধারণত HEAD মেথডে পিং পাঠায়
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-
     def do_GET(self):
-        # ব্রাউজার বা সাধারণ রিকোয়েস্টের জন্য GET মেথড
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write(b"Bot is alive and running!")
+        self.wfile.write(b"Bot is alive!")
 
     def log_message(self, format, *args):
-        # কনসোলে অতিরিক্ত পিং লগ বন্ধ রাখতে
         return
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
-    HTTPServer.allow_reuse_address = True
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-# --- বট কনফিগারেশন ---
-# পরিবেশ ভেরিয়েবল থাকলে সেখান থেকে নেবে, না থাকলে ডিফল্ট টোকেন নেবে
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU")
+BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
 
 AD_URLS = [
     "https://example.com/your-adsterra-direct-link-1",
@@ -61,6 +49,10 @@ spin_records = {}
 ad_last_click = {}
 channel_bonus_claimed = set()
 referred_users = set()
+
+# ইউজার রিটেনশন ও পুশ নোটিফিকেশন ট্র্যাকিং
+user_last_active = {}      # {user_id: timestamp}
+user_last_reminded = {}    # {user_id: timestamp}
 
 async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
     await asyncio.sleep(delay_seconds)
@@ -128,7 +120,7 @@ def get_main_menu(user_id, user_name, bot_username=""):
         ],
         [
             InlineKeyboardButton("🪙 🫦 Watch Ad (+10) 💋", callback_data="watch_ad"),
-            InlineKeyboardButton("🪙 👄 Watch Ad (+10)🫦", callback_data="watch_ad")
+            InlineKeyboardButton("🪙 👄 Watch Ad (+10) 🫦", callback_data="watch_ad")
         ],
         [
             InlineKeyboardButton("🪙 🌶️ Watch Ad (+10) 🍑", callback_data="watch_ad"),
@@ -145,12 +137,52 @@ def get_main_menu(user_id, user_name, bot_username=""):
     
     return caption, InlineKeyboardMarkup(keyboard)
 
+# --- ২৪ ঘণ্টার অটোমেটিক রিটেনশন পুশ নোটিফিকেশন লুপ ---
+async def daily_retention_alarm_loop(app):
+    await asyncio.sleep(10)  # সার্ভার স্টার্টআপের জন্য সাময়িক অপেক্ষা
+    while True:
+        now = time.time()
+        one_day = 86400  # ২৪ ঘণ্টা = ৮৬,৪০০ সেকেন্ড
+
+        for uid, last_active in list(user_last_active.items()):
+            # ২৪ ঘণ্টা পার হয়েছে এবং গত ২৪ ঘণ্টায় রিমাইন্ডার পাঠানো হয়নি
+            last_sent = user_last_reminded.get(uid, 0)
+            if (now - last_active >= one_day) and (now - last_sent >= one_day):
+                try:
+                    name = user_names.get(uid, "Lover")
+                    reminder_text = (
+                        f"🔞 <b>Fresh 18+ VIP Clips Just Dropped!</b> 🫦💦\n\n"
+                        f"Hey <b>{name}</b>, your daily rewards are waiting! 💋\n"
+                        f"🎁 Claim your <b>Daily Bonus (+25 Coins)</b> & <b>Lucky Spins</b> now.\n\n"
+                        f"👇 Tap below to jump straight in:"
+                    )
+                    bot_username = (await app.bot.get_me()).username
+                    bot_link = f"https://t.me/{bot_username}?start=wake"
+                    
+                    btn = InlineKeyboardMarkup([
+                        [InlineKeyboardButton("💋 Enter VIP Room Now 🫦", url=bot_link)]
+                    ])
+
+                    await app.bot.send_message(
+                        chat_id=uid,
+                        text=reminder_text,
+                        parse_mode="HTML",
+                        reply_markup=btn
+                    )
+                    user_last_reminded[uid] = now
+                except Exception:
+                    pass
+                await asyncio.sleep(0.5)  # রেট লিমিট সুরক্ষিত রাখা
+
+        await asyncio.sleep(1800)  # প্রতি ৩০ মিনিট পর পর স্ক্যান করবে
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
     user_name = user.first_name
 
     user_names[user_id] = user_name
+    user_last_active[user_id] = time.time()
     bot_username = (await context.bot.get_me()).username
 
     if context.args and len(context.args) > 0:
@@ -164,7 +196,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     try:
                         await context.bot.send_message(
                             chat_id=referrer_id,
-                            text="🎉 <b>Referral Success!</b> A new friend joined with your link. You got <b>+20 Coins</b>! 🫦",
+                            text=f"🎉 <b>Referral Success!</b> A new friend joined with your link. You got <b>+20 Coins</b>! 🫦",
                             parse_mode="HTML"
                         )
                     except Exception:
@@ -191,6 +223,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = user.first_name
 
     user_names[user_id] = user_name
+    user_last_active[user_id] = time.time()
     if user_id not in user_coins:
         user_coins[user_id] = 0
 
@@ -400,13 +433,15 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 show_alert=True
             )
 
+async def post_init(application):
+    # বট সক্রিয় হওয়ার পর স্বয়ংক্রিয় ব্যাকগ্রাউন্ড অ্যালার্ম লুপ চালু করা
+    asyncio.create_task(daily_retention_alarm_loop(application))
+
 if __name__ == '__main__':
-    # ব্যাকগ্রাউন্ড থ্রেডে ওয়েব সার্ভার চালু করা
     web_thread = threading.Thread(target=run_web_server, daemon=True)
     web_thread.start()
 
-    # টেলিগ্রাম বট অ্যাপ্লিকেশন শুরু
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
 
