@@ -5,7 +5,6 @@ import time
 import urllib.parse
 from datetime import datetime, date
 import logging
-from aiohttp import web
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -48,20 +47,38 @@ referred_users = set()
 user_last_active = {}
 user_last_reminded = {}
 
-# --- 501 Error Fix: Robust aiohttp Web Server ---
-async def handle_ping(request):
-    return web.Response(text="Bot is alive!", status=200, content_type="text/plain")
+# --- Built-in Lightweight HTTP Server (কোনো aiohttp লাগবে না, 501 এরর হবে না) ---
+async def handle_client(reader, writer):
+    try:
+        # ক্লায়েন্ট/রেন্ডার থেকে আসা রিকোয়েস্ট রিড করা
+        await reader.read(1024)
+        
+        # যেকোনো রিকোয়েস্টেই (GET, HEAD, POST, OPTIONS) স্ট্যান্ডার্ড 200 OK পাঠানো
+        body = b"Bot is alive!"
+        response = (
+            b"HTTP/1.1 200 OK\r\n"
+            b"Content-Type: text/plain; charset=utf-8\r\n"
+            b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n"
+            b"Connection: close\r\n"
+            b"\r\n" + body
+        )
+        writer.write(response)
+        await writer.drain()
+    except Exception:
+        pass
+    finally:
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
 
 async def start_web_server():
     port = int(os.environ.get("PORT", 8080))
-    server_app = web.Application()
-    # যেকোনো রুটে GET, POST, HEAD সব মেথড হ্যান্ডেল করবে
-    server_app.router.add_route('*', '/{tail:.*}', handle_ping)
-    runner = web.AppRunner(server_app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-    logger.info(f"Web server started on port {port}")
+    server = await asyncio.start_server(handle_client, "0.0.0.0", port)
+    logger.info(f"Built-in HTTP server running on port {port}")
+    # ব্যাকগ্রাউন্ডে সার্ভার সচল রাখা
+    asyncio.create_task(server.serve_forever())
 
 # --- Helper Functions ---
 async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
@@ -443,7 +460,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
 async def post_init(application):
-    # স্টার্টআপের সময় ওয়েব সার্ভার ও রিটেনশন অ্যালার্ম চালু
     await start_web_server()
     asyncio.create_task(daily_retention_alarm_loop(application))
 
@@ -452,5 +468,5 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
 
-    print("Bot is starting with aiohttp server...")
+    print("Bot is starting...")
     app.run_polling()
