@@ -26,10 +26,11 @@ AD_URLS = [
     "https://example.com/your-monetag-direct-link-4"
 ]
 
-CHANNEL_1_ID = "@your_channel_1"
-CHANNEL_2_ID = "@your_channel_2"
-CHANNEL_1_URL = "https://t.me/your_channel_1"
-CHANNEL_2_URL = "https://t.me/your_channel_2"
+# আপনার নতুন চ্যানেলের আইডি এবং লিংক আপডেট করা হলো
+CHANNEL_1_ID = "@mimlovely9"
+CHANNEL_2_ID = "@konalovely9"
+CHANNEL_1_URL = "https://t.me/mimlovely9"
+CHANNEL_2_URL = "https://t.me/konalovely9"
 
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
@@ -47,13 +48,10 @@ referred_users = set()
 user_last_active = {}
 user_last_reminded = {}
 
-# --- Built-in Lightweight HTTP Server (কোনো aiohttp লাগবে না, 501 এরর হবে না) ---
+# --- Built-in Lightweight HTTP Server ---
 async def handle_client(reader, writer):
     try:
-        # ক্লায়েন্ট/রেন্ডার থেকে আসা রিকোয়েস্ট রিড করা
         await reader.read(1024)
-        
-        # যেকোনো রিকোয়েস্টেই (GET, HEAD, POST, OPTIONS) স্ট্যান্ডার্ড 200 OK পাঠানো
         body = b"Bot is alive!"
         response = (
             b"HTTP/1.1 200 OK\r\n"
@@ -77,7 +75,6 @@ async def start_web_server():
     port = int(os.environ.get("PORT", 8080))
     server = await asyncio.start_server(handle_client, "0.0.0.0", port)
     logger.info(f"Built-in HTTP server running on port {port}")
-    # ব্যাকগ্রাউন্ডে সার্ভার সচল রাখা
     asyncio.create_task(server.serve_forever())
 
 # --- Helper Functions ---
@@ -117,22 +114,22 @@ def get_main_menu(user_id, user_name, bot_username=""):
 
     keyboard = [
         [
-            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://example.com/link_hot1")
+            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url=CHANNEL_1_URL)
         ],
         [
-            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://example.com/link_hot2")
+            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url=CHANNEL_2_URL)
         ],
         [
-            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://example.com/link1"),
-            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://example.com/link2")
+            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url=CHANNEL_1_URL),
+            InlineKeyboardButton("👄 Watch Full HD 💋", url=CHANNEL_2_URL)
         ],
         [
-            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://example.com/link3"),
-            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://example.com/link4")
+            InlineKeyboardButton("🫦 Adult Secrets 🔞", url=CHANNEL_1_URL),
+            InlineKeyboardButton("🌶️ Spicy Content 👄", url=CHANNEL_2_URL)
         ],
         [
-            InlineKeyboardButton("💋 Premium Clips 🍑", url="https://example.com/link5"),
-            InlineKeyboardButton("🫦 Private Leaks 💦", url="https://example.com/link6")
+            InlineKeyboardButton("💋 Premium Clips 🍑", url=CHANNEL_1_URL),
+            InlineKeyboardButton("🫦 Private Leaks 💦", url=CHANNEL_2_URL)
         ],
         [
             InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
