@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
+BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
 
 AD_URLS = [
     "https://example.com/your-adsterra-direct-link-1",
