@@ -54,6 +54,7 @@ CHANNEL_2_ID = "@your_channel_2"
 CHANNEL_1_URL = "https://t.me/your_channel_1"
 CHANNEL_2_URL = "https://t.me/your_channel_2"
 
+# আনলক ভিআইপি লিংক
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
 
@@ -103,38 +104,63 @@ def get_main_menu(user_id, user_name, bot_username=""):
     encoded_text = urllib.parse.quote(raw_share_text)
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
 
-    # প্রতিটি বাটনকে আলাদা লাইনে (একটি ব্র্যাকেট []) রাখা হয়েছে যাতে একটির সাথে অন্যটির সংঘর্ষ না হয়
     keyboard = [
-        # --- ১ থেকে ৭ নং ওয়েবসাইট লিংক বাটন (আলাদা আলাদা লাইনে) ---
-        [InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")],
-        [InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")],
-        [InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/")],
-        [InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")],
-        [InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/")],
-        [InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")],
-        [InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")],
+        # --- উপরের বাটনগুলো (সরাসরি ওয়েবসাইট ওপেন হবে) ---
+        [
+            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")
+        ],
+        [
+            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")
+        ],
+        [
+            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/"),
+            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")
+        ],
+        [
+            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/"),
+            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")
+        ],
+        [
+            InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")
+        ],
 
         # --- লক করা VIP বাটন ---
-        [InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")],
+        [
+            InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
+        ],
 
-        # --- স্পিন ও গেম বাটন ---
-        [InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel")],
-        [InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")],
+        # --- স্পিন ও লিডারবোর্ড বাটন ---
+        [
+            InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel"),
+            InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")
+        ],
 
-        # --- ডেইলি বোনাস ও রেফার বাটন ---
-        [InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus")],
-        [InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)],
+        # --- ডেইলি বোনাস ও শেয়ার/রেফার বাটন ---
+        [
+            InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
+            InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)
+        ],
 
-        # --- বিজ্ঞাপনের লিংক বাটন (প্রতিটি আলাদা লাইনে সরাসরি ওপেন হবে) ---
-        [InlineKeyboardButton("🔥 🫦 Direct Link 1 (Adsterra) 💋", url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e")],
-        [InlineKeyboardButton("🔥 👄 Direct Link 2 (Adsterra) 🫦", url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e")],
-        [InlineKeyboardButton("🔥 🌶️ Direct Link 3 (Adsterra) 🍑", url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc")],
-        [InlineKeyboardButton("🔥 💋 Direct Link 4 (Monetag) 💦", url="https://uplcm.com/4/12077063")],
+        # --- নিচের খালি বাটনগুলোতে ৪টি এড (ক্লিক করলেই সরাসরি এড ওপেন হবে) ---
+        [
+            InlineKeyboardButton("🔥 🫦 Direct Link 1 (Adsterra) 💋", url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e"),
+            InlineKeyboardButton("🔥 👄 Direct Link 2 (Adsterra) 🫦", url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e")
+        ],
+        [
+            InlineKeyboardButton("🔥 🌶️ Direct Link 3 (Adsterra) 🍑", url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc"),
+            InlineKeyboardButton("🔥 💋 Direct Link 4 (Monetag) 💦", url="https://uplcm.com/4/12077063")
+        ],
 
-        # --- চ্যানেল জয়েন ও রিওয়ার্ড বাটন ---
-        [InlineKeyboardButton("📢 🫦 Join Channel 1 💋", url=CHANNEL_1_URL)],
-        [InlineKeyboardButton("📢 👄 Join Channel 2 🫦", url=CHANNEL_2_URL)],
-        [InlineKeyboardButton("✅ 💋 Verify & Claim (+50 Coins) 🫦 ✅", callback_data="claim_channel_bonus")]
+        # --- চ্যানেল ১ ও চ্যানেল ২ লিংক বাটন (সরাসরি চ্যানেলে নিয়ে যাবে) ---
+        [
+            InlineKeyboardButton("📢 🫦 Join Channel 1 💋", url=CHANNEL_1_URL),
+            InlineKeyboardButton("📢 👄 Join Channel 2 🫦", url=CHANNEL_2_URL)
+        ],
+
+        # --- চ্যানেল জয়েন ভেরিফাই ও ক্লেইম বাটন ---
+        [
+            InlineKeyboardButton("✅ 💋 Verify & Claim (+50 Coins) 🫦 ✅", callback_data="claim_channel_bonus")
+        ]
     ]
     
     return caption, InlineKeyboardMarkup(keyboard)
@@ -230,6 +256,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today_str = str(date.today())
     bot_username = (await context.bot.get_me()).username
 
+    # স্পিন হুইল ফাংশন
     if query.data == "spin_wheel":
         user_spin = spin_records.get(user_id, {"date": today_str, "count": 0})
         if user_spin["date"] != today_str:
@@ -296,6 +323,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
+    # লিডারবোর্ড ফাংশন
     elif query.data == "leaderboard":
         sorted_users = sorted(user_coins.items(), key=lambda item: item[1], reverse=True)[:10]
         leaderboard_text = "🏆 <b>TOP 10 COIN EARNERS</b> 🏆\n\n"
@@ -317,6 +345,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         asyncio.create_task(safe_delete_message(context.bot, user_id, leader_msg.message_id, 7))
 
+    # ডেইলি বোনাস ফাংশন
     elif query.data == "daily_bonus":
         last_claimed = daily_claims.get(user_id)
         if last_claimed == today_str:
@@ -341,6 +370,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 pass
 
+    # চ্যানেল জয়েন চেক ও রিওয়ার্ড ফাংশন
     elif query.data == "claim_channel_bonus":
         if user_id in channel_bonus_claimed:
             await query.answer(
@@ -373,6 +403,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     show_alert=True
                 )
 
+    # ভিআইপি আনলক ফাংশন
     elif query.data == "unlock_vip":
         if user_coins[user_id] >= 1000:
             user_coins[user_id] -= 1000
