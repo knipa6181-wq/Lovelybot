@@ -48,10 +48,11 @@ def run_web_server():
 # --- Configuration ---
 BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
 
-CHANNEL_1_ID = "@your_channel_1"
-CHANNEL_2_ID = "@your_channel_2"
-CHANNEL_1_URL = "https://t.me/your_channel_1"
-CHANNEL_2_URL = "https://t.me/your_channel_2"
+# চ্যানেল কনফিগারেশন (আপনার দেওয়া চ্যানেল দুটি এখানে সেট করা হয়েছে)
+CHANNEL_1_ID = "@mimlovely9"
+CHANNEL_2_ID = "@konalovely9"
+CHANNEL_1_URL = "https://t.me/mimlovely9"
+CHANNEL_2_URL = "https://t.me/konalovely9"
 
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
@@ -102,7 +103,6 @@ def get_main_menu(user_id, user_name, bot_username=""):
     encoded_text = urllib.parse.quote(raw_share_text)
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
 
-    # WebAppInfo দিয়ে সাজানো মেনু
     keyboard = [
         [
             InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", web_app=WebAppInfo(url="https://tikpic.loveup.top/"))
@@ -141,8 +141,8 @@ def get_main_menu(user_id, user_name, bot_username=""):
             InlineKeyboardButton("🔥 Kiss F**k 🔞", web_app=WebAppInfo(url="https://uplcm.com/4/12077063"))
         ],
         [
-            InlineKeyboardButton("📢 🫦 Channel 1 💋", url=CHANNEL_1_URL),
-            InlineKeyboardButton("📢 👄 Channel 2 🫦", url=CHANNEL_2_URL)
+            InlineKeyboardButton("📢 🫦 Join @mimlovely9 💋", url=CHANNEL_1_URL),
+            InlineKeyboardButton("📢 👄 Join @konalovely9 🫦", url=CHANNEL_2_URL)
         ],
         [
             InlineKeyboardButton("✅ 💋 Verify & Claim (+50) 🫦 ✅", callback_data="claim_channel_bonus")
@@ -385,7 +385,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     pass
             else:
                 await query.answer(
-                    text="❌ You haven't joined both channels yet! Please join Channel 1 & Channel 2 first. 🫦",
+                    text="❌ You haven't joined both channels yet! Please join @mimlovely9 & @konalovely9 first. 🫦",
                     show_alert=True
                 )
 
