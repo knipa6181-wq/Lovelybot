@@ -48,11 +48,11 @@ def run_web_server():
 # --- Configuration ---
 BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
 
-# আপনার Adsterra ও Monetag ডিরেক্ট লিংক
-AD_ADSTERRA_1 = "https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e"
-AD_ADSTERRA_2 = "https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e"
-AD_ADSTERRA_3 = "https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc"
-AD_MONETAG_1  = "https://uplcm.com/4/12077063"
+# চ্যানেল কনফিগারেশন
+CHANNEL_1_ID = "@your_channel_1"
+CHANNEL_2_ID = "@your_channel_2"
+CHANNEL_1_URL = "https://t.me/your_channel_1"
+CHANNEL_2_URL = "https://t.me/your_channel_2"
 
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
@@ -62,7 +62,7 @@ user_coins = {}
 user_names = {}
 daily_claims = {}
 spin_records = {}
-ad_last_click = {}
+channel_bonus_claimed = set()
 referred_users = set()
 
 # Retention tracking
@@ -76,13 +76,20 @@ async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
     except Exception:
         pass
 
+async def is_user_member(bot, chat_id, user_id):
+    try:
+        member = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        return member.status in ["member", "administrator", "creator"]
+    except TelegramError:
+        return False
+
 def get_main_menu(user_id, user_name, bot_username=""):
     coins = user_coins.get(user_id, 0)
     
     caption = (
         f"💋 <b>Welcome, {user_name}!</b> 🫦\n"
         f"👤 <b>User:</b> {user_name} | 💰 <b>Balance:</b> <code>{coins} Coins</code>\n"
-        f"💄 <i>Watch spicy clips, spin lucky wheels & unlock VIP treats!</i>"
+        f"💄 <i>Spin, watch ads, climb the leaderboard & unlock VIP treats!</i>"
     )
     
     refer_link = f"https://t.me/{bot_username}?start=ref_{user_id}" if bot_username else "https://t.me/"
@@ -96,56 +103,38 @@ def get_main_menu(user_id, user_name, bot_username=""):
     encoded_text = urllib.parse.quote(raw_share_text)
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
 
+    # প্রতিটি বাটনকে আলাদা লাইনে (একটি ব্র্যাকেট []) রাখা হয়েছে যাতে একটির সাথে অন্যটির সংঘর্ষ না হয়
     keyboard = [
-        # --- ১ থেকে ৭ নং ওয়েবসাইট লিংক ---
-        [
-            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")
-        ],
-        [
-            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")
-        ],
-        [
-            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/"),
-            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")
-        ],
-        [
-            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/"),
-            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")
-        ],
-        [
-            InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")
-        ],
+        # --- ১ থেকে ৭ নং ওয়েবসাইট লিংক বাটন (আলাদা আলাদা লাইনে) ---
+        [InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")],
+        [InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")],
+        [InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/")],
+        [InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")],
+        [InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/")],
+        [InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")],
+        [InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")],
 
         # --- লক করা VIP বাটন ---
-        [
-            InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
-        ],
+        [InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")],
 
-        # --- গেম, লিডারবোর্ড, বোনাস ও রেফার বাটন ---
-        [
-            InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel"),
-            InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")
-        ],
-        [
-            InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
-            InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)
-        ],
+        # --- স্পিন ও গেম বাটন ---
+        [InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel")],
+        [InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")],
 
-        # --- সরাসরি বিজ্ঞাপন বাটন (Adsterra & Monetag) ---
-        [
-            InlineKeyboardButton("🔥 🫦 Direct Link 1 (Adsterra) 💋", url=AD_ADSTERRA_1),
-            InlineKeyboardButton("🔥 👄 Direct Link 2 (Adsterra) 🫦", url=AD_ADSTERRA_2)
-        ],
-        [
-            InlineKeyboardButton("🔥 🌶️ Direct Link 3 (Adsterra) 🍑", url=AD_ADSTERRA_3),
-            InlineKeyboardButton("🔥 💋 Direct Link 4 (Monetag) 💦", url=AD_MONETAG_1)
-        ],
+        # --- ডেইলি বোনাস ও রেফার বাটন ---
+        [InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus")],
+        [InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)],
 
-        # --- বিজ্ঞাপন দেখে কয়েন পাওয়ার বাটন (Adsterra & Monetag যুক্ত) ---
-        [
-            InlineKeyboardButton("🪙 🫦 Watch Monetag (+10) 💋", callback_data="ad_monetag"),
-            InlineKeyboardButton("🪙 👄 Watch Adsterra (+10) 🫦", callback_data="ad_adsterra")
-        ]
+        # --- বিজ্ঞাপনের লিংক বাটন (প্রতিটি আলাদা লাইনে সরাসরি ওপেন হবে) ---
+        [InlineKeyboardButton("🔥 🫦 Direct Link 1 (Adsterra) 💋", url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e")],
+        [InlineKeyboardButton("🔥 👄 Direct Link 2 (Adsterra) 🫦", url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e")],
+        [InlineKeyboardButton("🔥 🌶️ Direct Link 3 (Adsterra) 🍑", url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc")],
+        [InlineKeyboardButton("🔥 💋 Direct Link 4 (Monetag) 💦", url="https://uplcm.com/4/12077063")],
+
+        # --- চ্যানেল জয়েন ও রিওয়ার্ড বাটন ---
+        [InlineKeyboardButton("📢 🫦 Join Channel 1 💋", url=CHANNEL_1_URL)],
+        [InlineKeyboardButton("📢 👄 Join Channel 2 🫦", url=CHANNEL_2_URL)],
+        [InlineKeyboardButton("✅ 💋 Verify & Claim (+50 Coins) 🫦 ✅", callback_data="claim_channel_bonus")]
     ]
     
     return caption, InlineKeyboardMarkup(keyboard)
@@ -239,34 +228,9 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_coins[user_id] = 0
 
     today_str = str(date.today())
-    now = time.time()
     bot_username = (await context.bot.get_me()).username
 
-    if query.data in ["ad_monetag", "ad_adsterra"]:
-        last_ad_time = ad_last_click.get(user_id, 0)
-        cooldown = 20
-        if now - last_ad_time < cooldown:
-            remaining = int(cooldown - (now - last_ad_time))
-            await query.answer(
-                text=f"⏳ Please wait {remaining} more seconds! 🫦",
-                show_alert=True
-            )
-            return
-
-        ad_last_click[user_id] = now
-        user_coins[user_id] += 10
-        
-        target_ad = AD_MONETAG_1 if query.data == "ad_monetag" else random.choice([AD_ADSTERRA_1, AD_ADSTERRA_2, AD_ADSTERRA_3])
-        
-        await query.answer(text="🎉 +10 Coins Added! 💋", show_alert=True)
-        sent_ad_msg = await context.bot.send_message(
-            chat_id=user_id,
-            text=f"👉 <b>Watch here:</b> 🫦\n🔗 <a href='{target_ad}'>Click Here To Watch Video</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
-            parse_mode="HTML"
-        )
-        asyncio.create_task(safe_delete_message(context.bot, user_id, sent_ad_msg.message_id, 10))
-
-    elif query.data == "spin_wheel":
+    if query.data == "spin_wheel":
         user_spin = spin_records.get(user_id, {"date": today_str, "count": 0})
         if user_spin["date"] != today_str:
             user_spin = {"date": today_str, "count": 0}
@@ -376,6 +340,38 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             except Exception:
                 pass
+
+    elif query.data == "claim_channel_bonus":
+        if user_id in channel_bonus_claimed:
+            await query.answer(
+                text="⚠️ You have already claimed your 50 Coins channel bonus! 🫦",
+                show_alert=True
+            )
+        else:
+            is_ch1 = await is_user_member(context.bot, CHANNEL_1_ID, user_id)
+            is_ch2 = await is_user_member(context.bot, CHANNEL_2_ID, user_id)
+
+            if is_ch1 and is_ch2:
+                channel_bonus_claimed.add(user_id)
+                user_coins[user_id] += 50
+                await query.answer(
+                    text="🎉 Verified! You joined all channels. +50 Coins added! 💋",
+                    show_alert=True
+                )
+                caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
+                try:
+                    await query.edit_message_caption(
+                        caption=caption,
+                        parse_mode="HTML",
+                        reply_markup=reply_markup
+                    )
+                except Exception:
+                    pass
+            else:
+                await query.answer(
+                    text="❌ You haven't joined both channels yet! Please join Channel 1 & Channel 2 first. 🫦",
+                    show_alert=True
+                )
 
     elif query.data == "unlock_vip":
         if user_coins[user_id] >= 1000:
