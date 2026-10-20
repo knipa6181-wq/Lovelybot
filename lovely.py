@@ -1,36 +1,58 @@
 import os
+import threading
 import asyncio
 import random
 import time
 import urllib.parse
 from datetime import datetime, date
-import logging
-
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
-# --- Logging Setup ---
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+# --- Render Web Server (501 Not Implemented Fix) ---
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def _send_ok(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-Length', '13')
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+    def do_GET(self):
+        self._send_ok()
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-Length', '13')
+        self.end_headers()
+
+    def do_POST(self):
+        self._send_ok()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Allow', 'GET, HEAD, POST, OPTIONS')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        return
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    server.serve_forever()
 
 # --- Configuration ---
-BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
+BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
 
-AD_URLS = [
-    "https://example.com/your-adsterra-direct-link-1",
-    "https://example.com/your-adsterra-direct-link-2",
-    "https://example.com/your-adsterra-direct-link-3",
-    "https://example.com/your-monetag-direct-link-4"
-]
-
-# আপনার নতুন চ্যানেলের আইডি এবং লিংক আপডেট করা হলো
-CHANNEL_1_ID = "@mimlovely9"
-CHANNEL_2_ID = "@konalovely9"
-CHANNEL_1_URL = "https://t.me/mimlovely9"
-CHANNEL_2_URL = "https://t.me/konalovely9"
+# আপনার Adsterra ও Monetag ডিরেক্ট লিংক
+AD_ADSTERRA_1 = "https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e"
+AD_ADSTERRA_2 = "https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e"
+AD_ADSTERRA_3 = "https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc"
+AD_MONETAG_1  = "https://uplcm.com/4/12077063"
 
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
@@ -41,43 +63,12 @@ user_names = {}
 daily_claims = {}
 spin_records = {}
 ad_last_click = {}
-channel_bonus_claimed = set()
 referred_users = set()
 
 # Retention tracking
 user_last_active = {}
 user_last_reminded = {}
 
-# --- Built-in Lightweight HTTP Server ---
-async def handle_client(reader, writer):
-    try:
-        await reader.read(1024)
-        body = b"Bot is alive!"
-        response = (
-            b"HTTP/1.1 200 OK\r\n"
-            b"Content-Type: text/plain; charset=utf-8\r\n"
-            b"Content-Length: " + str(len(body)).encode("ascii") + b"\r\n"
-            b"Connection: close\r\n"
-            b"\r\n" + body
-        )
-        writer.write(response)
-        await writer.drain()
-    except Exception:
-        pass
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
-
-async def start_web_server():
-    port = int(os.environ.get("PORT", 8080))
-    server = await asyncio.start_server(handle_client, "0.0.0.0", port)
-    logger.info(f"Built-in HTTP server running on port {port}")
-    asyncio.create_task(server.serve_forever())
-
-# --- Helper Functions ---
 async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
     await asyncio.sleep(delay_seconds)
     try:
@@ -85,20 +76,13 @@ async def safe_delete_message(bot, chat_id, message_id, delay_seconds: int = 5):
     except Exception:
         pass
 
-async def is_user_member(bot, chat_id, user_id):
-    try:
-        member = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
-        return member.status in ["member", "administrator", "creator"]
-    except TelegramError:
-        return False
-
 def get_main_menu(user_id, user_name, bot_username=""):
     coins = user_coins.get(user_id, 0)
     
     caption = (
         f"💋 <b>Welcome, {user_name}!</b> 🫦\n"
         f"👤 <b>User:</b> {user_name} | 💰 <b>Balance:</b> <code>{coins} Coins</code>\n"
-        f"💄 <i>Spin, watch ads, climb the leaderboard & unlock VIP treats!</i>"
+        f"💄 <i>Watch spicy clips, spin lucky wheels & unlock VIP treats!</i>"
     )
     
     refer_link = f"https://t.me/{bot_username}?start=ref_{user_id}" if bot_username else "https://t.me/"
@@ -113,55 +97,59 @@ def get_main_menu(user_id, user_name, bot_username=""):
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
 
     keyboard = [
+        # --- ১ থেকে ৭ নং ওয়েবসাইট লিংক ---
         [
-            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url=CHANNEL_1_URL)
+            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")
         ],
         [
-            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url=CHANNEL_2_URL)
+            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")
         ],
         [
-            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url=CHANNEL_1_URL),
-            InlineKeyboardButton("👄 Watch Full HD 💋", url=CHANNEL_2_URL)
+            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/"),
+            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")
         ],
         [
-            InlineKeyboardButton("🫦 Adult Secrets 🔞", url=CHANNEL_1_URL),
-            InlineKeyboardButton("🌶️ Spicy Content 👄", url=CHANNEL_2_URL)
+            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/"),
+            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")
         ],
         [
-            InlineKeyboardButton("💋 Premium Clips 🍑", url=CHANNEL_1_URL),
-            InlineKeyboardButton("🫦 Private Leaks 💦", url=CHANNEL_2_URL)
+            InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")
         ],
+
+        # --- লক করা VIP বাটন ---
         [
             InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
         ],
+
+        # --- গেম, লিডারবোর্ড, বোনাস ও রেফার বাটন ---
         [
             InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel"),
             InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")
         ],
         [
             InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
-            InlineKeyboardButton("👥 💋 Share to Friends (+20) 🌶️", url=official_share_url)
+            InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)
+        ],
+
+        # --- সরাসরি বিজ্ঞাপন বাটন (Adsterra & Monetag) ---
+        [
+            InlineKeyboardButton("🔥 🫦 Direct Link 1 (Adsterra) 💋", url=AD_ADSTERRA_1),
+            InlineKeyboardButton("🔥 👄 Direct Link 2 (Adsterra) 🫦", url=AD_ADSTERRA_2)
         ],
         [
-            InlineKeyboardButton("🪙 🫦 Watch Ad (+10) 💋", callback_data="watch_ad"),
-            InlineKeyboardButton("🪙 👄 Watch Ad (+10) 🫦", callback_data="watch_ad")
+            InlineKeyboardButton("🔥 🌶️ Direct Link 3 (Adsterra) 🍑", url=AD_ADSTERRA_3),
+            InlineKeyboardButton("🔥 💋 Direct Link 4 (Monetag) 💦", url=AD_MONETAG_1)
         ],
+
+        # --- বিজ্ঞাপন দেখে কয়েন পাওয়ার বাটন (Adsterra & Monetag যুক্ত) ---
         [
-            InlineKeyboardButton("🪙 🌶️ Watch Ad (+10) 🍑", callback_data="watch_ad"),
-            InlineKeyboardButton("🪙 💋 Watch Ad (+10) 💦", callback_data="watch_ad")
-        ],
-        [
-            InlineKeyboardButton("📢 🫦 Channel 1 💋", url=CHANNEL_1_URL),
-            InlineKeyboardButton("📢 👄 Channel 2 🫦", url=CHANNEL_2_URL)
-        ],
-        [
-            InlineKeyboardButton("✅ 💋 Verify & Claim (+50) 🫦 ✅", callback_data="claim_channel_bonus")
+            InlineKeyboardButton("🪙 🫦 Watch Monetag (+10) 💋", callback_data="ad_monetag"),
+            InlineKeyboardButton("🪙 👄 Watch Adsterra (+10) 🫦", callback_data="ad_adsterra")
         ]
     ]
     
     return caption, InlineKeyboardMarkup(keyboard)
 
-# Retention Alarm
 async def daily_retention_alarm_loop(app):
     await asyncio.sleep(10)
     while True:
@@ -254,28 +242,27 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now = time.time()
     bot_username = (await context.bot.get_me()).username
 
-    if query.data == "watch_ad":
+    # Adsterra এবং Monetag এড দেখে কয়েন নেওয়ার হ্যান্ডলার
+    if query.data in ["ad_monetag", "ad_adsterra"]:
         last_ad_time = ad_last_click.get(user_id, 0)
-        cooldown = 30
+        cooldown = 20
         if now - last_ad_time < cooldown:
             remaining = int(cooldown - (now - last_ad_time))
             await query.answer(
-                text=f"⏳ Please wait {remaining} more seconds before watching another ad! 🫦",
+                text=f"⏳ Please wait {remaining} more seconds! 🫦",
                 show_alert=True
             )
             return
 
         ad_last_click[user_id] = now
         user_coins[user_id] += 10
-        selected_ad = random.choice(AD_URLS)
         
-        await query.answer(
-            text="🎉 +10 Coins Added! Opening ad... 💋",
-            show_alert=True
-        )
+        target_ad = AD_MONETAG_1 if query.data == "ad_monetag" else random.choice([AD_ADSTERRA_1, AD_ADSTERRA_2, AD_ADSTERRA_3])
+        
+        await query.answer(text="🎉 +10 Coins Added! 💋", show_alert=True)
         sent_ad_msg = await context.bot.send_message(
             chat_id=user_id,
-            text=f"👉 <b>Watch your video/ad here:</b> 🫦\n🔗 <a href='{selected_ad}'>Click Here To Watch</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
+            text=f"👉 <b>Watch here:</b> 🫦\n🔗 <a href='{target_ad}'>Click Here To Watch Video</a>\n\n<i>(This message will disappear in 10 seconds)</i>",
             parse_mode="HTML"
         )
         asyncio.create_task(safe_delete_message(context.bot, user_id, sent_ad_msg.message_id, 10))
@@ -357,7 +344,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             leaderboard_text += f"{medals[rank]} <b>{name}</b> — <code>{coins} Coins</code>\n"
             rank += 1
 
-        leaderboard_text += "\n💡 <i>Invite more friends and watch ads to get on top!</i> 🫦\n\n<i>(This message will disappear in 7 seconds)</i>"
+        leaderboard_text += "\n💡 <i>Invite more friends to climb the leaderboard!</i> 🫦\n\n<i>(This message will disappear in 7 seconds)</i>"
         await query.answer()
         
         leader_msg = await context.bot.send_message(
@@ -390,38 +377,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             except Exception:
                 pass
-
-    elif query.data == "claim_channel_bonus":
-        if user_id in channel_bonus_claimed:
-            await query.answer(
-                text="⚠️ You have already claimed your 50 Coins channel bonus! 🫦",
-                show_alert=True
-            )
-        else:
-            is_ch1 = await is_user_member(context.bot, CHANNEL_1_ID, user_id)
-            is_ch2 = await is_user_member(context.bot, CHANNEL_2_ID, user_id)
-
-            if is_ch1 and is_ch2:
-                channel_bonus_claimed.add(user_id)
-                user_coins[user_id] += 50
-                await query.answer(
-                    text="🎉 Verified! You joined all channels. +50 Coins added! 💋",
-                    show_alert=True
-                )
-                caption, reply_markup = get_main_menu(user_id, user_name, bot_username)
-                try:
-                    await query.edit_message_caption(
-                        caption=caption,
-                        parse_mode="HTML",
-                        reply_markup=reply_markup
-                    )
-                except Exception:
-                    pass
-            else:
-                await query.answer(
-                    text="❌ You haven't joined both channels yet! Please join Channel 1 & Channel 2 first. 🫦",
-                    show_alert=True
-                )
 
     elif query.data == "unlock_vip":
         if user_coins[user_id] >= 1000:
@@ -457,13 +412,15 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
 async def post_init(application):
-    await start_web_server()
     asyncio.create_task(daily_retention_alarm_loop(application))
 
 if __name__ == '__main__':
+    web_thread = threading.Thread(target=run_web_server, daemon=True)
+    web_thread.start()
+
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
 
-    print("Bot is starting...")
+    print("Bot is running...")
     app.run_polling()
