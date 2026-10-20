@@ -6,7 +6,7 @@ import time
 import urllib.parse
 from datetime import datetime, date
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
@@ -48,13 +48,11 @@ def run_web_server():
 # --- Configuration ---
 BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
 
-# চ্যানেল কনফিগারেশন
 CHANNEL_1_ID = "@your_channel_1"
 CHANNEL_2_ID = "@your_channel_2"
 CHANNEL_1_URL = "https://t.me/your_channel_1"
 CHANNEL_2_URL = "https://t.me/your_channel_2"
 
-# আনলক ভিআইপি লিংক
 VIP_SECRET_LINK = "https://example.com/exclusive-vip-access-link"
 GIF_URL = "https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif"
 
@@ -104,62 +102,50 @@ def get_main_menu(user_id, user_name, bot_username=""):
     encoded_text = urllib.parse.quote(raw_share_text)
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
 
+    # WebAppInfo দিয়ে সাজানো মেনু
     keyboard = [
-        # --- উপরের বাটনগুলো (সরাসরি ওয়েবসাইট ওপেন হবে) ---
         [
-            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")
+            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", web_app=WebAppInfo(url="https://tikpic.loveup.top/"))
         ],
         [
-            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")
+            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", web_app=WebAppInfo(url="https://loveup.top/"))
         ],
         [
-            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/"),
-            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")
+            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", web_app=WebAppInfo(url="https://insta.loveup.top/")),
+            InlineKeyboardButton("👄 Watch Full HD 💋", web_app=WebAppInfo(url="https://whatsup.loveup.top/"))
         ],
         [
-            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/"),
-            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")
+            InlineKeyboardButton("🫦 Adult Secrets 🔞", web_app=WebAppInfo(url="https://call.loveup.top/")),
+            InlineKeyboardButton("🌶️ Spicy Content 👄", web_app=WebAppInfo(url="https://tikreels.loveup.top/"))
         ],
         [
-            InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")
+            InlineKeyboardButton("💋 Premium Clips 👙", web_app=WebAppInfo(url="https://hotstepsis.blogspot.com/?m=1"))
         ],
-
-        # --- লক করা VIP বাটন ---
         [
             InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
         ],
-
-        # --- স্পিন ও লিডারবোর্ড বাটন ---
         [
             InlineKeyboardButton("🎰 🫦 Spin & Roll (3/day) 🍒", callback_data="spin_wheel"),
             InlineKeyboardButton("🏆 💋 Top 10 Earners 🔞", callback_data="leaderboard")
         ],
-
-        # --- ডেইলি বোনাস ও শেয়ার/রেফার বাটন ---
         [
             InlineKeyboardButton("🎁 👄 Daily Bonus (+25) 🫦", callback_data="daily_bonus"),
             InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)
         ],
-
-        # --- নিচের খালি বাটনগুলোতে ৪টি এড (ক্লিক করলেই সরাসরি এড ওপেন হবে) ---
         [
-            InlineKeyboardButton("🔥 🫦 Direct Link 1 (Adsterra) 💋", url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e"),
-            InlineKeyboardButton("🔥 👄 Direct Link 2 (Adsterra) 🫦", url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e")
+            InlineKeyboardButton("📞 Call Now 💋", web_app=WebAppInfo(url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e")),
+            InlineKeyboardButton("🔴 Live Start 🫦", web_app=WebAppInfo(url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e"))
         ],
         [
-            InlineKeyboardButton("🔥 🌶️ Direct Link 3 (Adsterra) 🍑", url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc"),
-            InlineKeyboardButton("🔥 💋 Direct Link 4 (Monetag) 💦", url="https://uplcm.com/4/12077063")
+            InlineKeyboardButton("💬 massages me 👄", web_app=WebAppInfo(url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc")),
+            InlineKeyboardButton("🔥 Kiss F**k 🔞", web_app=WebAppInfo(url="https://uplcm.com/4/12077063"))
         ],
-
-        # --- চ্যানেল ১ ও চ্যানেল ২ লিংক বাটন (সরাসরি চ্যানেলে নিয়ে যাবে) ---
         [
-            InlineKeyboardButton("📢 🫦 Join Channel 1 💋", url=CHANNEL_1_URL),
-            InlineKeyboardButton("📢 👄 Join Channel 2 🫦", url=CHANNEL_2_URL)
+            InlineKeyboardButton("📢 🫦 Channel 1 💋", url=CHANNEL_1_URL),
+            InlineKeyboardButton("📢 👄 Channel 2 🫦", url=CHANNEL_2_URL)
         ],
-
-        # --- চ্যানেল জয়েন ভেরিফাই ও ক্লেইম বাটন ---
         [
-            InlineKeyboardButton("✅ 💋 Verify & Claim (+50 Coins) 🫦 ✅", callback_data="claim_channel_bonus")
+            InlineKeyboardButton("✅ 💋 Verify & Claim (+50) 🫦 ✅", callback_data="claim_channel_bonus")
         ]
     ]
     
