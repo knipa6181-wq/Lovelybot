@@ -46,7 +46,7 @@ def run_web_server():
     server.serve_forever()
 
 # --- Configuration ---
-BOT_TOKEN = "8838722017:AAFVBXpLpojx4090_UkWM8lDK8qlWLZ_QuU"
+BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
 
 # আপনার Adsterra ও Monetag ডিরেক্ট লিংক
 AD_ADSTERRA_1 = "https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e"
@@ -242,7 +242,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now = time.time()
     bot_username = (await context.bot.get_me()).username
 
-    # Adsterra এবং Monetag এড দেখে কয়েন নেওয়ার হ্যান্ডলার
     if query.data in ["ad_monetag", "ad_adsterra"]:
         last_ad_time = ad_last_click.get(user_id, 0)
         cooldown = 20
