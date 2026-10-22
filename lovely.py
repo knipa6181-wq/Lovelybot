@@ -6,7 +6,7 @@ import time
 import urllib.parse
 from datetime import datetime, date
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import TelegramError
 
@@ -46,9 +46,10 @@ def run_web_server():
     server.serve_forever()
 
 # --- Configuration ---
-BOT_TOKEN = "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk"
+# নিরাপত্তার জন্য টোকেনটি BotFather থেকে রিভোক করে নতুন টোকেন বসিয়ে নেওয়া জরুরি
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8838722017:AAFaEoWWcP7g0oN90V480mLRNDScUhnlgEk")
 
-# চ্যানেল কনফিগারেশন (আপনার দেওয়া চ্যানেল দুটি এখানে সেট করা হয়েছে)
+# চ্যানেল কনফিগারেশন
 CHANNEL_1_ID = "@mimlovely9"
 CHANNEL_2_ID = "@konalovely9"
 CHANNEL_1_URL = "https://t.me/mimlovely9"
@@ -103,23 +104,24 @@ def get_main_menu(user_id, user_name, bot_username=""):
     encoded_text = urllib.parse.quote(raw_share_text)
     official_share_url = f"https://t.me/share/url?url={encoded_url}&text={encoded_text}"
 
+    # web_app বাদ দিয়ে সরাসরি url প্যারামিটার ব্যবহার করা হয়েছে যাতে লিংকগুলো অনায়াসে খোলে
     keyboard = [
         [
-            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", web_app=WebAppInfo(url="https://tikpic.loveup.top/"))
+            InlineKeyboardButton("🔞 🫦 WATCH UNCENSORED 18+ 🍑 🔞", url="https://tikpic.loveup.top/")
         ],
         [
-            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", web_app=WebAppInfo(url="https://loveup.top/"))
+            InlineKeyboardButton("💋 🍒 VIP PRIVATE SHOW 🫦 💦", url="https://loveup.top/")
         ],
         [
-            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", web_app=WebAppInfo(url="https://insta.loveup.top/")),
-            InlineKeyboardButton("👄 Watch Full HD 💋", web_app=WebAppInfo(url="https://whatsup.loveup.top/"))
+            InlineKeyboardButton("🔞 Hot Videos 18+ 🫦", url="https://insta.loveup.top/"),
+            InlineKeyboardButton("👄 Watch Full HD 💋", url="https://whatsup.loveup.top/")
         ],
         [
-            InlineKeyboardButton("🫦 Adult Secrets 🔞", web_app=WebAppInfo(url="https://call.loveup.top/")),
-            InlineKeyboardButton("🌶️ Spicy Content 👄", web_app=WebAppInfo(url="https://tikreels.loveup.top/"))
+            InlineKeyboardButton("🫦 Adult Secrets 🔞", url="https://call.loveup.top/"),
+            InlineKeyboardButton("🌶️ Spicy Content 👄", url="https://tikreels.loveup.top/")
         ],
         [
-            InlineKeyboardButton("💋 Premium Clips 👙", web_app=WebAppInfo(url="https://hotstepsis.blogspot.com/?m=1"))
+            InlineKeyboardButton("💋 Premium Clips 👙", url="https://hotstepsis.blogspot.com/?m=1")
         ],
         [
             InlineKeyboardButton("👑 🔓 Unlock VIP (1000 Coins) 🫦 👑", callback_data="unlock_vip")
@@ -133,12 +135,12 @@ def get_main_menu(user_id, user_name, bot_username=""):
             InlineKeyboardButton("👥 💋 Share to Friends (+20) 🔞", url=official_share_url)
         ],
         [
-            InlineKeyboardButton("📞 Call Now 💋", web_app=WebAppInfo(url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e")),
-            InlineKeyboardButton("🔴 Live Start 🫦", web_app=WebAppInfo(url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e"))
+            InlineKeyboardButton("📞 Call Now 💋", url="https://auctionr.org/4/e6164d8130c07e4f4dcb8a1d486e367e"),
+            InlineKeyboardButton("🔴 Live Start 🫦", url="https://auctionr.org/4/935f34c5d14c5616973249d5ca5e1a4e")
         ],
         [
-            InlineKeyboardButton("💬 massages me 👄", web_app=WebAppInfo(url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc")),
-            InlineKeyboardButton("🔥 Kiss F**k 🔞", web_app=WebAppInfo(url="https://uplcm.com/4/12077063"))
+            InlineKeyboardButton("💬 massages me 👄", url="https://asiafilm.org/4/94ee730f3d01052ac1a7301e79c205cc"),
+            InlineKeyboardButton("🔥 Kiss F**k 🔞", url="https://uplcm.com/4/12077063")
         ],
         [
             InlineKeyboardButton("📢 🫦 Join @mimlovely9 💋", url=CHANNEL_1_URL),
